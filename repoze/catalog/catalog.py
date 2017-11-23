@@ -1,15 +1,16 @@
+import six
 import BTrees
 from persistent.mapping import PersistentMapping
 import transaction
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from repoze.catalog.interfaces import ICatalog
 from repoze.catalog.interfaces import ICatalogIndex
 
-class Catalog(PersistentMapping):
 
-    implements(ICatalog)
+@implementer(ICatalog)
+class Catalog(PersistentMapping):
 
     family = BTrees.family32
 
@@ -100,7 +101,8 @@ class Catalog(PersistentMapping):
             if not results:
                 return EMPTY_RESULT
 
-            results.sort() # order from smallest to largest
+            # order from smallest to largest
+            results = sorted(results, key=lambda x: len(x))
             _, result = results.pop(0)
             for _, r in results:
                 _, result = self.family.IF.weightedIntersection(result, r)
@@ -145,7 +147,7 @@ class Catalog(PersistentMapping):
         (num, resultseq)."""
         try:
             from repoze.catalog.query import parse_query
-            if isinstance(queryobject, basestring):
+            if isinstance(queryobject, six.string_types):
                 queryobject = parse_query(queryobject)
         except ImportError: #pragma NO COVERAGE
             pass

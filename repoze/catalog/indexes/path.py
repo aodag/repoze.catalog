@@ -1,4 +1,5 @@
-from zope.interface import implements
+import six
+from zope.interface import implementer
 from persistent import Persistent
 
 import BTrees
@@ -10,6 +11,8 @@ from repoze.catalog.indexes.common import CatalogIndex
 
 _marker = ()
 
+
+@implementer(ICatalogIndex)
 class CatalogPathIndex(CatalogIndex):
 
     """Index for model paths (tokens separated by '/' characters)
@@ -33,14 +36,14 @@ class CatalogPathIndex(CatalogIndex):
     - NotEq
 
     """
-    implements(ICatalogIndex)
+
     useOperator = 'or'
 
     family = BTrees.family32
 
     def __init__(self, discriminator):
         if not callable(discriminator):
-            if not isinstance(discriminator, basestring):
+            if not isinstance(discriminator, six.string_types):
                 raise ValueError('discriminator value must be callable or a '
                                  'string')
         self.discriminator = discriminator
@@ -61,10 +64,10 @@ class CatalogPathIndex(CatalogIndex):
            level is the level of the component inside the path
         """
 
-        if not self._index.has_key(comp):
+        if comp not in self._index:
             self._index[comp] = self.family.IO.BTree()
 
-        if not self._index[comp].has_key(level):
+        if level not in self._index[comp]:
             self._index[comp][level] = self.family.IF.TreeSet()
 
         self._index[comp][level].insert(id)
@@ -99,7 +102,7 @@ class CatalogPathIndex(CatalogIndex):
         if isinstance(path, (list, tuple)):
             path = '/'+ '/'.join(path[1:])
 
-        comps = filter(None, path.split('/'))
+        comps = list(filter(None, path.split('/')))
 
         if not self._unindex.has_key(docid):
             self._length.change(1)
@@ -149,13 +152,13 @@ class CatalogPathIndex(CatalogIndex):
         level >= 0  starts searching at the given level
         level <  0  not implemented yet
         """
-        if isinstance(path, basestring):
+        if isinstance(path, six.string_types):
             level = default_level
         else:
             level = int(path[1])
             path  = path[0]
 
-        comps = filter(None, path.split('/'))
+        comps = list(filter(None, path.split('/')))
 
         if len(comps) == 0:
             return self.family.IF.Set(self._unindex.keys())
@@ -199,13 +202,13 @@ class CatalogPathIndex(CatalogIndex):
         level = 0
         operator = self.useOperator
 
-        if isinstance(query, basestring):
+        if isinstance(query, six.string_types):
             paths = [query]
         elif isinstance(query, (tuple, list)):
             paths = query
         else:
             paths = query.get('query', [])
-            if isinstance(paths, basestring):
+            if isinstance(paths, six.string_types):
                 paths = [ paths ]
             level = query.get('level', 0)
             operator = query.get('operator', self.useOperator).lower()
@@ -219,7 +222,8 @@ class CatalogPathIndex(CatalogIndex):
 
         else:
             rs = None
-            sets.sort(lambda x, y: cmp(len(x), len(y)))
+            # sets.sort(lambda x, y: cmp(len(x), len(y)))
+            sets.sort(key=lambda x: len(x))
             for set in sets:
                 rs = self.family.IF.intersection(rs, set)
                 if not rs:

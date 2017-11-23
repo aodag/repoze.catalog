@@ -1,4 +1,5 @@
-from zope.interface import implements
+import six
+from zope.interface import implementer
 
 from zope.index.keyword import KeywordIndex
 
@@ -6,6 +7,7 @@ from repoze.catalog.interfaces import ICatalogIndex
 from repoze.catalog.indexes.common import CatalogIndex
 
 
+@implementer(ICatalogIndex)
 class CatalogKeywordIndex(CatalogIndex, KeywordIndex):
     """
     Keyword index.
@@ -29,11 +31,10 @@ class CatalogKeywordIndex(CatalogIndex, KeywordIndex):
     - NotAll
 
     """
-    implements(ICatalogIndex)
 
     def __init__(self, discriminator):
         if not callable(discriminator):
-            if not isinstance(discriminator, basestring):
+            if not isinstance(discriminator, six.string_types):
                 raise ValueError('discriminator value must be callable or a '
                                  'string')
         self.discriminator = discriminator

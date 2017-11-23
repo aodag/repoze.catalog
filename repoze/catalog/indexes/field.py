@@ -2,7 +2,9 @@ import bisect
 import heapq
 from itertools import islice
 
-from zope.interface import implements
+import six
+
+from zope.interface import implementer
 
 from zope.index.field import FieldIndex
 
@@ -17,6 +19,7 @@ NBEST = 'nbest'
 TIMSORT = 'timsort'
 
 
+@implementer(ICatalogIndex)
 class CatalogFieldIndex(CatalogIndex, FieldIndex):
     """ Field indexing.
 
@@ -46,11 +49,10 @@ class CatalogFieldIndex(CatalogIndex, FieldIndex):
 
     - NotInRange
     """
-    implements(ICatalogIndex)
 
     def __init__(self, discriminator):
         if not callable(discriminator):
-            if not isinstance(discriminator, basestring):
+            if not isinstance(discriminator, six.string_types):
                 raise ValueError('discriminator value must be callable or a '
                                  'string')
         self.discriminator = discriminator
@@ -180,7 +182,7 @@ class CatalogFieldIndex(CatalogIndex, FieldIndex):
 
     def nbest_ascending(self, docids, limit):
         if limit is None: #pragma NO COVERAGE
-            raise RuntimeError, 'n-best used without limit'
+            raise RuntimeError('n-best used without limit')
 
         # lifted from heapq.nsmallest
 
@@ -204,7 +206,7 @@ class CatalogFieldIndex(CatalogIndex, FieldIndex):
 
     def nbest_descending(self, docids, limit):
         if limit is None: #pragma NO COVERAGE
-            raise RuntimeError, 'N-Best used without limit'
+            raise RuntimeError('N-Best used without limit')
         iterable = nsort(docids, self._rev_index)
         for value, docid in heapq.nlargest(limit, iterable):
             yield docid
@@ -224,6 +226,7 @@ class CatalogFieldIndex(CatalogIndex, FieldIndex):
             v = rev_index.get(k, marker)
             if v is marker:
                 _missing.append(k)
+                return 0
             return v
 
         for docid in sorted(docids, key=get, reverse=reverse):
@@ -250,7 +253,7 @@ class CatalogFieldIndex(CatalogIndex, FieldIndex):
         if len(sets) == 1:
             result = sets[0]
         elif operator == 'and':
-            sets.sort()
+            sets = sorted(sets, key=lambda x: len(x))
             for set in sets:
                 result = self.family.IF.intersection(set, result)
         else:

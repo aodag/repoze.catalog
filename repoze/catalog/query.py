@@ -1,11 +1,8 @@
+from __future__ import print_function
+import six
 import BTrees
 import sys
-
-try:
-    import ast
-    ast_support = True
-except ImportError:  # pragma NO COVERAGE
-    ast_support = False
+import ast
 
 
 _marker = object()
@@ -36,7 +33,7 @@ class Query(object):
         return ()
 
     def print_tree(self, out=sys.stdout, level=0):
-        print >> out, '  ' * level + str(self)
+        print('  ' * level + six.text_type(self), file=out)
         for child in self.iter_children():
             child.print_tree(out, level + 1)
 
@@ -495,7 +492,7 @@ class Or(BoolOp):
                 query_lower.negate(), query_upper.negate())
             queries[i_upper] = None
 
-        for i in xrange(len(queries)):
+        for i in range(len(queries)):
             query = queries[i]
             if type(query) in (Lt, Le):
                 match = uppers.get(query.index_name)
@@ -513,7 +510,7 @@ class Or(BoolOp):
                 else:
                     uppers[query.index_name] = (i, query)
 
-        queries = filter(None, queries)
+        queries = list(filter(None, queries))
         if len(queries) == 1:
             return queries[0]
 
@@ -558,7 +555,7 @@ class And(BoolOp):
             queries[i_lower] = InRange.fromGTLT(query_lower, query_upper)
             queries[i_upper] = None
 
-        for i in xrange(len(queries)):
+        for i in range(len(queries)):
             query = queries[i]
             if type(query) in (Gt, Ge):
                 match = uppers.get(query.index_name)
@@ -576,7 +573,7 @@ class And(BoolOp):
                 else:
                     uppers[query.index_name] = (i, query)
 
-        queries = filter(None, queries)
+        queries = list(filter(None, queries))
         if len(queries) == 1:
             return queries[0]
 
@@ -740,9 +737,12 @@ class _AstParser(object):
     def process_Num(self, node, children):
         return node.n
 
+    def process_USub(self, node, children):
+        return lambda x: -1 * x
+
     def process_List(self, node, children):
         l = list(children[:-1])
-        for i in xrange(len(l)):
+        for i in range(len(l)):
             if isinstance(l[i], ast.Name):
                 l[i] = self._value(l[i])
         return l
@@ -919,8 +919,6 @@ def parse_query(expr, optimize_query=True):
     Parses the given expression string and returns a query object.  Requires
     Python >= 2.6.
     """
-    if not ast_support:
-        raise NotImplementedError("Parsing of CQEs requires Python >= 2.6")
     query = _AstParser(expr).parse()
     if optimize_query:
         query = optimize(query)
@@ -934,7 +932,7 @@ def _print_ast(expr):  # pragma NO COVERAGE
     tree = ast.parse(expr)
 
     def visit(node, level):
-        print '  ' * level + str(node)
+        print('  ' * level + six.text_type(node))
         for child in ast.iter_child_nodes(node):
             visit(child, level + 1)
     visit(tree, 0)

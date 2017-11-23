@@ -1,4 +1,5 @@
-from zope.interface import implements
+import six
+from zope.interface import implementer
 
 import BTrees
 
@@ -8,6 +9,7 @@ from repoze.catalog.indexes.common import CatalogIndex
 _marker = object()
 
 
+@implementer(ICatalogIndex)
 class CatalogPathIndex2(CatalogIndex):  #pragma NO COVERAGE
     """
     DEPRECATED
@@ -31,19 +33,19 @@ class CatalogPathIndex2(CatalogIndex):  #pragma NO COVERAGE
     Eq
 
     """
-    implements(ICatalogIndex)
+
     attr_discriminator = None # b/w compat
 
     family = BTrees.family32
 
     def __init__(self, discriminator, attr_discriminator=None):
         if not callable(discriminator):
-            if not isinstance(discriminator, basestring):
+            if not isinstance(discriminator, six.string_types):
                 raise ValueError('discriminator value must be callable or a '
                                  'string')
         self.discriminator = discriminator
         if attr_discriminator is not None and not callable(attr_discriminator):
-            if not isinstance(attr_discriminator, basestring):
+            if not isinstance(attr_discriminator, six.string_types):
                 raise ValueError('attr_discriminator value must be callable '
                                  'or a string')
         self.attr_discriminator = attr_discriminator
@@ -62,11 +64,13 @@ class CatalogPathIndex2(CatalogIndex):  #pragma NO COVERAGE
     def __nonzero__(self):
         return True
 
+    __bool__ = __nonzero__
+
     def _getPathTuple(self, path):
         if not path:
             raise ValueError('path must be nonempty (not %s)' % str(path))
 
-        if isinstance(path, basestring):
+        if isinstance(path, six.string_types):
             path = path.rstrip('/')
             path = tuple(path.split('/'))
 
@@ -355,7 +359,7 @@ class CatalogPathIndex2(CatalogIndex):  #pragma NO COVERAGE
         documentation for the ``search`` method of this class to
         understand paths, depths, and the ``include_path`` argument.
         """
-        if isinstance(query, (basestring, tuple, list)):
+        if isinstance(query, (six.string_types, tuple, list)):
             path = query
             depth = None
             include_path = False
